@@ -1,12 +1,17 @@
 <script setup>
 import { ref } from 'vue'
 import { authService } from '@/services/authService'
+import { accountingService } from '@/services/accountingService'
 
 // 登入資訊物件
 const userLoginInfo = ref({ email: '', password: '' })
 // 登入
 async function login() {
   await authService.login(userLoginInfo.value)
+}
+
+function testbtn() {
+  console.log(accountingService.getAllAccountingData())
 }
 </script>
 
@@ -23,6 +28,8 @@ async function login() {
         <button type="button" class="btn btn-primary" @click="login">登入</button>
       </div>
     </div>
+
+    <div><button type="button" @click="testbtn">test</button></div>
   </main>
 </template>
 
