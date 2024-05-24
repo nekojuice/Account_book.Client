@@ -1,30 +1,63 @@
 <script setup>
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { authService } from '@/services/authService'
 import { accountingService } from '@/services/accountingService'
+import { labelTypeService } from '@/services/labelTypeService'
+
+onMounted(async () => {
+  const result = await labelTypeService.getAllLabelType()
+  lableTypeArray.value = result.returnData
+})
 
 // 登入資訊物件
 const isLogin = ref(false) // 是否登入
 const userLoginInfo = ref({ email: '111', password: '222' }) // 登入input
 // 登入
 async function onLogin() {
+  // 登入
   await authService.login(userLoginInfo.value)
-  const result = await accountingService.getAllAccountingData()
-  accountingData.value = result.returnData
+  // 登入後撈取清單
+  const getResult = await accountingService.getAllAccountingData()
+  accountingData.value = getResult.returnData
+  if (getResult.returnCode != 2000) {
+    alert('讀取資料失敗')
+  }
   isLogin.value = !isLogin.value
 }
 // 登出
 function onLogout() {
   isLogin.value = !isLogin.value
-  // todo: 刪除 cookie
+  // TODO: 刪除 cookie
 }
 
-// 帳本資料
+// 帳本datatable資料
 const accountingData = ref([])
-// 新增
-function insertAccounting() {}
+
 // 新增用物件
 const insertData = ref({ typeId: '', message: null, money: null, recordTime: null })
+// 消費類別-下拉選單
+const lableTypeArray = ref([])
+// 驗證 insertData
+function isValidatedInsertData() {
+  for (const prop in insertData.value) {
+    if (!insertData.value[prop] && prop != 'message') return false
+  }
+  return true
+}
+
+// 送出新增
+async function sendInsertAccounting() {
+  if (!isValidatedInsertData()) {
+    alert('尚有欄位未填寫')
+    return
+  }
+  const postResult = await accountingService.postInsertAccountingData(insertData.value)
+  if (postResult.returnCode != 2000) {
+    alert('新增資料失敗')
+  }
+  const getResult = await accountingService.getAllAccountingData()
+  accountingData.value = getResult.returnData
+}
 </script>
 
 <template>
@@ -112,9 +145,9 @@ const insertData = ref({ typeId: '', message: null, money: null, recordTime: nul
             <span class="input-group-text">類型</span
             ><select name="LabelType" class="form-control" v-model="insertData.typeId">
               <option disabled value="" selected>請選擇類型</option>
-              <!-- todo: fetch 所有類別標籤與id -->
-              <option value="1">貓咪佔位符1</option>
-              <option value="2">貓咪佔位符2</option>
+              <option v-for="label in lableTypeArray" :key="label.typeId" :value="label.typeId">
+                {{ label.typeName }}
+              </option>
             </select>
           </div>
           <div class="input-group mb-3">
@@ -133,7 +166,7 @@ const insertData = ref({ typeId: '', message: null, money: null, recordTime: nul
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-          <button type="button" class="btn btn-primary" @click="insertAccounting">儲存</button>
+          <button type="button" class="btn btn-primary" @click="sendInsertAccounting">儲存</button>
         </div>
       </div>
     </div>
