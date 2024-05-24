@@ -9,6 +9,7 @@ import router from './router'
 // bootstrap
 import './scss/style.scss'
 import * as bootstrap from 'bootstrap'
+import 'bootstrap-icons/font/bootstrap-icons.css'
 
 const app = createApp(App)
 

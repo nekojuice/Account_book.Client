@@ -1,13 +1,17 @@
+<!-- eslint-disable vue/no-side-effects-in-computed-properties -->
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { authService } from '@/services/authService'
 import { accountingService } from '@/services/accountingService'
 import { labelTypeService } from '@/services/labelTypeService'
+import { Modal } from 'bootstrap'
 
 onMounted(async () => {
   const result = await labelTypeService.getAllLabelType()
   lableTypeArray.value = result.returnData
 })
+// 消費類別-下拉選單 (初始化)
+const lableTypeArray = ref([])
 
 // 登入資訊物件
 const isLogin = ref(false) // 是否登入
@@ -30,32 +34,79 @@ function onLogout() {
   // TODO: 刪除 cookie
 }
 
+// -----------------------------------
 // 帳本datatable資料
 const accountingData = ref([])
+// 排序datatable // BUG
+const sortDatatableByDate = computed(() =>
+  accountingData.value.sort(function (a, b) {
+    return new Date(a.recordTime) - new Date(b.recordTime)
+  })
+)
+// watch(accountingData, () => {
+//   accountingData.value.sort(function (a, b) {
+//     return new Date(a.recordTime) - new Date(b.recordTime)
+//   })
+//})
 
-// 新增用物件
-const insertData = ref({ typeId: '', message: null, money: null, recordTime: null })
-// 消費類別-下拉選單
-const lableTypeArray = ref([])
-// 驗證 insertData
-function isValidatedInsertData() {
-  for (const prop in insertData.value) {
-    if (!insertData.value[prop] && prop != 'message') return false
+// 表單用物件
+const formData = ref({ typeId: '', message: null, money: null, recordTime: null })
+
+// 資料 CRUD
+// 表單模式: 新增模式(default) | 修改模式
+const formEditMode = ref('新增模式')
+function changeFormEditMode(mode, ListedAccountingId) {
+  formEditMode.value = mode
+  if (ListedAccountingId) {
+    formData.value = accountingData.value.filter(function (data) {
+      return data.accountingId === ListedAccountingId
+    })[0]
+  } else {
+    formData.value = { typeId: '', message: null, money: null, recordTime: null }
   }
-  return true
 }
 
-// 送出新增
-async function sendInsertAccounting() {
-  if (!isValidatedInsertData()) {
+// FormDataModal 控制顯示
+const refFormDataModal = ref(null)
+// 送出表單
+async function sendFormData() {
+  if (!isValidatedFormValue()) {
     alert('尚有欄位未填寫')
     return
   }
-  const postResult = await accountingService.postInsertAccountingData(insertData.value)
-  if (postResult.returnCode != 2000) {
-    alert('新增資料失敗')
+  if (formEditMode.value === '新增模式') {
+    const postResult = await accountingService.postInsertAccountingData(formData.value)
+    if (postResult.returnCode != 2000) {
+      alert('新增資料失敗')
+      return
+    }
+    const getResult = await accountingService.getAllAccountingData() // [ ] 重撈datatable?
+    accountingData.value = getResult.returnData
   }
-  const getResult = await accountingService.getAllAccountingData()
+  if (formEditMode.value === '修改模式') {
+    const postResult = await accountingService.putUpdateAccountingData(formData.value)
+    if (postResult.returnCode != 2000) {
+      alert('修改資料失敗')
+      return
+    }
+    const getResult = await accountingService.getAllAccountingData() // [ ] 重撈datatable?
+    accountingData.value = getResult.returnData
+  }
+  Modal.getInstance(refFormDataModal.value)?.hide() // 需要條件控制是否關閉 modal
+}
+// 驗證 formData 三個必填欄位
+function isValidatedFormValue() {
+  return Boolean(formData.value.typeId && formData.value.money && formData.value.recordTime)
+}
+async function sendDeleteAccounting() {
+  console.log(formData.value.accountingId)
+  const deleteResult = await accountingService.deleteAccountingData({
+    accountingId: formData.value.accountingId
+  })
+  if (deleteResult.returnCode != 2000) {
+    alert('刪除資料失敗')
+  }
+  const getResult = await accountingService.getAllAccountingData() // [ ] 重撈datatable?
   accountingData.value = getResult.returnData
 }
 </script>
@@ -63,7 +114,10 @@ async function sendInsertAccounting() {
 <template>
   <main>
     <div class="container">
-      <nav><h2>Easy Accounting Book</h2></nav>
+      <nav>
+        <h2>Easy Accounting Book</h2>
+        <button type="button" class="btn btn-danger" v-if="isLogin" @click="onLogout">登出</button>
+      </nav>
 
       <!-- 未登入 -->
       <div
@@ -86,12 +140,12 @@ async function sendInsertAccounting() {
 
       <!-- 已登入 -->
       <div v-if="isLogin">
-        <button type="button" class="btn btn-danger" @click="onLogout">登出</button>
         <button
           type="button"
           class="btn btn-primary"
           data-bs-toggle="modal"
-          data-bs-target="#exampleModal"
+          data-bs-target="#formDataModal"
+          @click="changeFormEditMode('新增模式', null)"
         >
           新增
         </button>
@@ -102,6 +156,7 @@ async function sendInsertAccounting() {
               <td>類型</td>
               <td>金額</td>
               <td>備註</td>
+              <td></td>
             </tr>
           </thead>
           <tbody>
@@ -110,24 +165,38 @@ async function sendInsertAccounting() {
               <td>{{ data.typeName }}</td>
               <td>{{ data.money }}</td>
               <td>{{ data.message }}</td>
+              <td>
+                <button
+                  class="btn btn-info"
+                  data-bs-toggle="modal"
+                  data-bs-target="#formDataModal"
+                  @click="changeFormEditMode('修改模式', data.accountingId)"
+                >
+                  <i class="bi bi-pencil"></i>
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
   </main>
-  <!-- insert Modal -->
+  <!-- formData Modal -->
   <div
     class="modal fade"
-    id="exampleModal"
+    id="formDataModal"
     tabindex="-1"
-    aria-labelledby="exampleModalLabel"
+    aria-labelledby="formDataModalLabel"
     aria-hidden="true"
+    ref="refFormDataModal"
   >
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="exampleModalLabel">新增一筆消費紀錄</h5>
+          <h5 class="modal-title" id="formDataModalLabel">
+            <span v-if="formEditMode === '新增模式'">新增</span
+            ><span v-if="formEditMode === '修改模式'">修改</span>消費紀錄
+          </h5>
           <button
             type="button"
             class="btn-close"
@@ -135,15 +204,15 @@ async function sendInsertAccounting() {
             aria-label="Close"
           ></button>
         </div>
-        <!-- 主區域 -->
+        <!-- modal 主區域 -->
         <div class="modal-body">
           <div class="input-group mb-3">
             <span class="input-group-text">時間</span
-            ><input type="datetime-local" class="form-control" v-model="insertData.recordTime" />
+            ><input type="datetime-local" class="form-control" v-model="formData.recordTime" />
           </div>
           <div class="input-group mb-3">
             <span class="input-group-text">類型</span
-            ><select name="LabelType" class="form-control" v-model="insertData.typeId">
+            ><select name="LabelType" class="form-control" v-model="formData.typeId">
               <option disabled value="" selected>請選擇類型</option>
               <option v-for="label in lableTypeArray" :key="label.typeId" :value="label.typeId">
                 {{ label.typeName }}
@@ -152,7 +221,7 @@ async function sendInsertAccounting() {
           </div>
           <div class="input-group mb-3">
             <span class="input-group-text">金額</span
-            ><input type="number" class="form-control" v-model="insertData.money" />
+            ><input type="number" class="form-control" v-model="formData.money" />
           </div>
           <div>
             <span>備註</span
@@ -160,13 +229,62 @@ async function sendInsertAccounting() {
               cols="30"
               rows="10"
               class="form-control"
-              v-model="insertData.message"
+              v-model="formData.message"
             ></textarea>
           </div>
         </div>
         <div class="modal-footer">
+          <button
+            class="btn btn-danger"
+            data-bs-toggle="modal"
+            data-bs-target="#deleteModal"
+            v-if="formEditMode === '修改模式'"
+          >
+            <i class="bi bi-trash"></i> 刪除
+          </button>
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-          <button type="button" class="btn btn-primary" @click="sendInsertAccounting">儲存</button>
+          <button type="button" class="btn btn-primary" @click="sendFormData">儲存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- delete confirm Modal -->
+  <div
+    class="modal fade"
+    id="deleteModal"
+    tabindex="-1"
+    aria-labelledby="deleteModal"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteModal">確認刪除?</h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
+        </div>
+        <!-- <div class="modal-body"></div> -->
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-toggle="modal"
+            data-bs-target="#formDataModal"
+          >
+            取消
+          </button>
+          <button
+            type="button"
+            class="btn btn-danger"
+            data-bs-dismiss="modal"
+            @click="sendDeleteAccounting"
+          >
+            確認刪除
+          </button>
         </div>
       </div>
     </div>

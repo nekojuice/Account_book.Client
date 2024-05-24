@@ -26,5 +26,31 @@ export const accountingService = {
     })
     const result = await response.json()
     return result
+  },
+  putUpdateAccountingData: async (data) => {
+    const loginUrl = 'https://localhost:7185/api/Accounting/UpdateAccounting'
+    const response = await fetch(loginUrl, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+      headers: {
+        Authorization: `Bearer ${authService.getToken}`,
+        'content-type': 'application/json'
+      }
+    })
+    const result = await response.json()
+    return result
+  },
+  deleteAccountingData: async (data) => {
+    const loginUrl = 'https://localhost:7185/api/Accounting/DeleteAccounting'
+    const response = await fetch(loginUrl, {
+      method: 'DELETE',
+      body: JSON.stringify(data),
+      headers: {
+        Authorization: `Bearer ${authService.getToken}`,
+        'content-type': 'application/json'
+      }
+    })
+    const result = await response.json()
+    return result
   }
 }
