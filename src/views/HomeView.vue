@@ -1,6 +1,6 @@
 <!-- eslint-disable vue/no-side-effects-in-computed-properties -->
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { authService } from '@/services/authService'
 import { accountingService } from '@/services/accountingService'
 import { labelTypeService } from '@/services/labelTypeService'
@@ -37,7 +37,7 @@ function onLogout() {
 // -----------------------------------
 // 帳本datatable資料
 const accountingData = ref([])
-// 排序datatable // BUG
+// 排序datatable
 const sortDatatableByDate = computed(() =>
   accountingData.value.sort(function (a, b) {
     return new Date(a.recordTime) - new Date(b.recordTime)
@@ -205,6 +205,8 @@ async function sendDeleteAccounting() {
           ></button>
         </div>
         <!-- modal 主區域 -->
+        <!-- BUG v-model 雙向綁定會造成，送出前datatable資料就更改，
+          若取消會造成資料不同步 -->
         <div class="modal-body">
           <div class="input-group mb-3">
             <span class="input-group-text">時間</span
