@@ -67,6 +67,13 @@ function changeFormEditMode(mode, ListedAccountingId) {
     formData.value = { typeId: '', message: null, money: null, recordTime: null }
   }
 }
+// 格式化顯示金額
+const moneyFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'TWD',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0
+})
 
 const refFormDataModal = ref(null) // FormDataModal 控制bootstrap modal DOM顯示
 // 送出表單
@@ -170,9 +177,11 @@ async function sendDeleteAccounting() {
           </thead>
           <tbody>
             <tr v-for="data in sortDatatableByDate" :key="data.accountingId">
-              <td>{{ data.recordTime }}</td>
+              <td>{{ new Date(data.recordTime).toLocaleString() }}</td>
               <td>{{ data.typeName }}</td>
-              <td>{{ data.money }}</td>
+              <td>
+                {{ moneyFormatter.format(data.money) }}
+              </td>
               <td>{{ data.message }}</td>
               <td>
                 <button
