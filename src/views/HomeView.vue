@@ -9,6 +9,17 @@ import { Modal } from 'bootstrap'
 onMounted(async () => {
   const result = await labelTypeService.getAllLabelType()
   lableTypeArray.value = result.returnData
+
+  // 自動登入-判別cookie是否有登入狀態
+  if (authService.getToken) {
+    const getResult = await accountingService.getAllAccountingData() // 登入後撈取清單
+    accountingData.value = getResult.returnData
+    if (getResult.returnCode != 2000) {
+      alert('讀取資料失敗')
+      isLogin.value = false
+    }
+    isLogin.value = true
+  }
 })
 // 消費類別-下拉選單 (初始化)
 const lableTypeArray = ref([])
@@ -18,20 +29,18 @@ const isLogin = ref(false) // 是否登入
 const userLoginInfo = ref({ email: '111', password: '222' }) // 登入input
 // 登入
 async function onLogin() {
-  // 登入
-  await authService.login(userLoginInfo.value)
-  // 登入後撈取清單
-  const getResult = await accountingService.getAllAccountingData()
+  await authService.login(userLoginInfo.value) // 登入
+  const getResult = await accountingService.getAllAccountingData() // 登入後撈取清單
   accountingData.value = getResult.returnData
   if (getResult.returnCode != 2000) {
     alert('讀取資料失敗')
   }
-  isLogin.value = !isLogin.value
+  isLogin.value = true
 }
 // 登出
 function onLogout() {
-  isLogin.value = !isLogin.value
-  // TODO: 刪除 cookie
+  isLogin.value = false
+  authService.logout()
 }
 
 // -----------------------------------

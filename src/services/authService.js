@@ -24,5 +24,9 @@ export const authService = {
   // 取得token
   get getToken() {
     return document.cookie.replace(/(?:(?:^|.*;\s*)token\s*=\s*([^;]*).*$)|^.*$/, '$1')
+  },
+  // 登出，刪除cookie
+  logout: () => {
+    document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 GMT'
   }
 }
