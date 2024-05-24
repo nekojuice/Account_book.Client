@@ -21,8 +21,6 @@ onMounted(async () => {
     isLogin.value = true
   }
 })
-// 消費類別-下拉選單 (初始化)
-const lableTypeArray = ref([])
 
 // 登入資訊物件
 const isLogin = ref(false) // 是否登入
@@ -44,26 +42,20 @@ function onLogout() {
 }
 
 // -----------------------------------
-// 帳本datatable資料
-const accountingData = ref([])
+// 資料 CRUD
+const lableTypeArray = ref([]) // 表單初始化-消費類別-下拉選單
+const accountingData = ref([]) // 帳本datatable資料
+
 // 排序datatable
 const sortDatatableByDate = computed(() =>
   accountingData.value.sort(function (a, b) {
     return new Date(a.recordTime) - new Date(b.recordTime)
   })
 )
-// watch(accountingData, () => {
-//   accountingData.value.sort(function (a, b) {
-//     return new Date(a.recordTime) - new Date(b.recordTime)
-//   })
-//})
 
-// 表單用物件
-const formData = ref({ typeId: '', message: null, money: null, recordTime: null })
-
-// 資料 CRUD
-// 表單模式: 新增模式(default) | 修改模式
-const formEditMode = ref('新增模式')
+const formData = ref({ typeId: '', message: null, money: null, recordTime: null }) // 表單用物件
+const formEditMode = ref('新增模式') // 表單模式
+// 切換表單模式 mode: 新增模式(default) | 修改模式
 function changeFormEditMode(mode, ListedAccountingId) {
   formEditMode.value = mode
   if (ListedAccountingId) {
@@ -76,8 +68,7 @@ function changeFormEditMode(mode, ListedAccountingId) {
   }
 }
 
-// FormDataModal 控制顯示
-const refFormDataModal = ref(null)
+const refFormDataModal = ref(null) // FormDataModal 控制bootstrap modal DOM顯示
 // 送出表單
 async function sendFormData() {
   if (!isValidatedFormValue()) {
@@ -102,11 +93,12 @@ async function sendFormData() {
     const getResult = await accountingService.getAllAccountingData() // [ ] 重撈datatable?
     accountingData.value = getResult.returnData
   }
-  Modal.getInstance(refFormDataModal.value)?.hide() // 需要條件控制是否關閉 modal
+  Modal.getInstance(refFormDataModal.value)?.hide() // 條件控制是否關閉 modal
 }
-// 驗證 formData 三個必填欄位
+
+// 驗證表單 formData
 function isValidatedFormValue() {
-  return Boolean(formData.value.typeId && formData.value.money && formData.value.recordTime)
+  return Boolean(formData.value.typeId && formData.value.money && formData.value.recordTime) // 三個必填欄位
 }
 async function sendDeleteAccounting() {
   console.log(formData.value.accountingId)
@@ -124,11 +116,18 @@ async function sendDeleteAccounting() {
 <template>
   <main>
     <div class="container">
-      <nav>
-        <h2>Easy Accounting Book</h2>
-        <button type="button" class="btn btn-danger" v-if="isLogin" @click="onLogout">登出</button>
+      <nav class="d-flex mt-5">
+        <h2 class="d-flex justify-content-start me-auto">Easy Accounting Book</h2>
+        <button
+          type="button"
+          class="btn btn-danger d-flex justify-content-end align-items-center"
+          v-if="isLogin"
+          @click="onLogout"
+        >
+          登出
+        </button>
       </nav>
-
+      <hr class="mt-3 mb-3" />
       <!-- 未登入 -->
       <div
         v-if="!isLogin"
@@ -152,15 +151,15 @@ async function sendDeleteAccounting() {
       <div v-if="isLogin">
         <button
           type="button"
-          class="btn btn-primary"
+          class="btn btn-primary mb-3 float-end"
           data-bs-toggle="modal"
           data-bs-target="#formDataModal"
           @click="changeFormEditMode('新增模式', null)"
         >
-          新增
+          + 新增消費記錄
         </button>
-        <table class="table">
-          <thead>
+        <table class="table table-striped">
+          <thead class="table-primary">
             <tr>
               <td>消費日期</td>
               <td>類型</td>
