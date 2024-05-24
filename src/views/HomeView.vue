@@ -160,7 +160,7 @@ async function sendDeleteAccounting() {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="data in accountingData" :key="data.accountingId">
+            <tr v-for="data in sortDatatableByDate" :key="data.accountingId">
               <td>{{ data.recordTime }}</td>
               <td>{{ data.typeName }}</td>
               <td>{{ data.money }}</td>
