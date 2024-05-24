@@ -58,9 +58,10 @@ const formEditMode = ref('新增模式')
 function changeFormEditMode(mode, ListedAccountingId) {
   formEditMode.value = mode
   if (ListedAccountingId) {
-    formData.value = accountingData.value.filter(function (data) {
+    const localData = accountingData.value.filter(function (data) {
       return data.accountingId === ListedAccountingId
-    })[0]
+    })[0] // 排序
+    formData.value = { ...localData } // 需深拷貝斷開 accountingData ref
   } else {
     formData.value = { typeId: '', message: null, money: null, recordTime: null }
   }
@@ -205,8 +206,9 @@ async function sendDeleteAccounting() {
           ></button>
         </div>
         <!-- modal 主區域 -->
-        <!-- BUG v-model 雙向綁定會造成，送出前datatable資料就更改，
+        <!-- v-model 雙向綁定會造成，送出前datatable資料就更改，
           若取消會造成資料不同步 -->
+        <!-- 需用深拷貝斷開 -->
         <div class="modal-body">
           <div class="input-group mb-3">
             <span class="input-group-text">時間</span
