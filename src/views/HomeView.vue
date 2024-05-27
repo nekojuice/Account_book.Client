@@ -14,7 +14,7 @@ onMounted(async () => {
   if (authService.getToken) {
     const getResult = await accountingService.getAllAccountingData() // 登入後撈取清單
     datatableData.value = getResult.returnData
-    if (getResult.returnCode != 2000) {
+    if (getResult.returnCode !== 2000) {
       alert('讀取資料失敗')
       isLogin.value = false
     }
@@ -28,7 +28,7 @@ const userLoginInfo = ref({ email: '111', password: '222' }) // 登入input
 // 登入
 async function onLogin() {
   const loginResult = await authService.login(userLoginInfo.value)
-  if (loginResult.returnCode != 2000) {
+  if (loginResult.returnCode !== 2000) {
     alert('登入失敗')
     return
   }
@@ -63,7 +63,7 @@ const moneyFormatter = new Intl.NumberFormat('en-US', {
 async function getDatatable() {
   const getResult = await accountingService.getAllAccountingData() // [ ] 重撈datatable
   datatableData.value = getResult.returnData
-  if (getResult.returnCode != 2000) {
+  if (getResult.returnCode !== 2000) {
     alert('讀取資料失敗')
   }
 }
@@ -94,7 +94,7 @@ async function sendFormData() {
   }
   if (formEditMode.value === '新增模式') {
     const postResult = await accountingService.postInsertAccountingData(formData.value)
-    if (postResult.returnCode != 2000) {
+    if (postResult.returnCode !== 2000) {
       alert('新增資料失敗')
       return
     }
@@ -102,7 +102,7 @@ async function sendFormData() {
   }
   if (formEditMode.value === '修改模式') {
     const postResult = await accountingService.putUpdateAccountingData(formData.value)
-    if (postResult.returnCode != 2000) {
+    if (postResult.returnCode !== 2000) {
       alert('修改資料失敗')
       return
     }
@@ -120,7 +120,7 @@ async function sendDeleteAccounting() {
   const deleteResult = await accountingService.deleteAccountingData({
     accountingId: formData.value.accountingId
   })
-  if (deleteResult.returnCode != 2000) {
+  if (deleteResult.returnCode !== 2000) {
     alert('刪除資料失敗')
   }
   getDatatable()
