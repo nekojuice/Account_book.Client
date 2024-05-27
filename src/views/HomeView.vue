@@ -13,7 +13,7 @@ onMounted(async () => {
   // 自動登入-判別cookie是否有登入狀態
   if (authService.getToken) {
     const getResult = await accountingService.getAllAccountingData() // 登入後撈取清單
-    accountingData.value = getResult.returnData
+    datatableData.value = getResult.returnData
     if (getResult.returnCode != 2000) {
       alert('讀取資料失敗')
       isLogin.value = false
@@ -27,12 +27,12 @@ const isLogin = ref(false) // 是否登入
 const userLoginInfo = ref({ email: '111', password: '222' }) // 登入input
 // 登入
 async function onLogin() {
-  await authService.login(userLoginInfo.value) // 登入
-  const getResult = await accountingService.getAllAccountingData() // 登入後撈取清單
-  accountingData.value = getResult.returnData
-  if (getResult.returnCode != 2000) {
-    alert('讀取資料失敗')
+  const loginResult = await authService.login(userLoginInfo.value)
+  if (loginResult.returnCode != 2000) {
+    alert('登入失敗')
+    return
   }
+  getDatatable()
   isLogin.value = true
 }
 // 登出
@@ -42,43 +42,53 @@ function onLogout() {
 }
 
 // -----------------------------------
-// 資料 CRUD
-const lableTypeArray = ref([]) // 表單初始化-消費類別-下拉選單
-const accountingData = ref([]) // 帳本datatable資料
+// Datatable
+const lableTypeArray = ref([]) // 下拉選單 - 消費類別
+const datatableData = ref([]) // 帳本datatable資料
 
-// 排序datatable
+// Datatable - 排序
 const sortDatatableByDate = computed(() =>
-  accountingData.value.sort(function (a, b) {
+  datatableData.value.sort(function (a, b) {
     return new Date(a.recordTime) - new Date(b.recordTime)
   })
 )
-
-const formData = ref({ typeId: '', message: null, money: null, recordTime: null }) // 表單用物件
-const formEditMode = ref('新增模式') // 表單模式
-// 切換表單模式 mode: 新增模式(default) | 修改模式
-function changeFormEditMode(mode, ListedAccountingId) {
-  formEditMode.value = mode
-  if (ListedAccountingId) {
-    const localData = accountingData.value.filter(function (data) {
-      return data.accountingId === ListedAccountingId
-    })[0] // 排序
-    formData.value = { ...localData } // 需深拷貝斷開 accountingData ref
-  } else {
-    formData.value = { typeId: '', message: null, money: null, recordTime: null }
-  }
-}
-// 格式化顯示金額
+// Datatable - 格式化顯示金額
 const moneyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'TWD',
   minimumFractionDigits: 0,
   maximumFractionDigits: 0
 })
+// Datatable - Get資料清單
+async function getDatatable() {
+  const getResult = await accountingService.getAllAccountingData() // [ ] 重撈datatable
+  datatableData.value = getResult.returnData
+  if (getResult.returnCode != 2000) {
+    alert('讀取資料失敗')
+  }
+}
 
-const refFormDataModal = ref(null) // FormDataModal 控制bootstrap modal DOM顯示
-// 送出表單
+// -----------------------------------
+// 表單 - 新增/修改
+const formData = ref({ typeId: '', message: null, money: null, recordTime: null }) // 表單用響應式物件
+const formEditMode = ref('新增模式') // 表單模式
+const formDataModalToggle = ref(null) // 表單區塊 Modal 顯示開關
+// 表單 - 切換模式 mode: 新增模式(default) | 修改模式
+function changeFormEditMode(mode, ListedAccountingId) {
+  formEditMode.value = mode
+  if (ListedAccountingId) {
+    const localData = datatableData.value.filter(function (data) {
+      return data.accountingId === ListedAccountingId
+    })[0] // 排序
+    formData.value = { ...localData } // 需斷開響應式物件
+  } else {
+    formData.value = { typeId: '', message: null, money: null, recordTime: null }
+  }
+}
+// 表單 - 送出 新增/修改
 async function sendFormData() {
   if (!isValidatedFormValue()) {
+    // 驗證資料未通過
     alert('尚有欄位未填寫')
     return
   }
@@ -88,8 +98,7 @@ async function sendFormData() {
       alert('新增資料失敗')
       return
     }
-    const getResult = await accountingService.getAllAccountingData() // [ ] 重撈datatable?
-    accountingData.value = getResult.returnData
+    getDatatable()
   }
   if (formEditMode.value === '修改模式') {
     const postResult = await accountingService.putUpdateAccountingData(formData.value)
@@ -97,16 +106,15 @@ async function sendFormData() {
       alert('修改資料失敗')
       return
     }
-    const getResult = await accountingService.getAllAccountingData() // [ ] 重撈datatable?
-    accountingData.value = getResult.returnData
+    getDatatable()
   }
-  Modal.getInstance(refFormDataModal.value)?.hide() // 條件控制是否關閉 modal
+  Modal.getInstance(formDataModalToggle.value)?.hide() // 驗證通過 && 送出成功->關閉 modal
 }
-
-// 驗證表單 formData
+// 表單 - 驗證資料
 function isValidatedFormValue() {
-  return Boolean(formData.value.typeId && formData.value.money && formData.value.recordTime) // 三個必填欄位
+  return Boolean(formData.value.typeId && formData.value.money && formData.value.recordTime) // 必填欄位
 }
+// 表單 - 刪除
 async function sendDeleteAccounting() {
   console.log(formData.value.accountingId)
   const deleteResult = await accountingService.deleteAccountingData({
@@ -115,8 +123,7 @@ async function sendDeleteAccounting() {
   if (deleteResult.returnCode != 2000) {
     alert('刪除資料失敗')
   }
-  const getResult = await accountingService.getAllAccountingData() // [ ] 重撈datatable?
-  accountingData.value = getResult.returnData
+  getDatatable()
 }
 </script>
 
@@ -165,6 +172,7 @@ async function sendDeleteAccounting() {
         >
           + 新增消費記錄
         </button>
+        <!-- datatable -->
         <table class="table table-striped">
           <thead class="table-primary">
             <tr>
@@ -199,14 +207,14 @@ async function sendDeleteAccounting() {
       </div>
     </div>
   </main>
-  <!-- formData Modal -->
+  <!-- 新增/修改表單 Modal -->
   <div
     class="modal fade"
     id="formDataModal"
     tabindex="-1"
     aria-labelledby="formDataModalLabel"
     aria-hidden="true"
-    ref="refFormDataModal"
+    ref="formDataModalToggle"
   >
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
@@ -223,9 +231,6 @@ async function sendDeleteAccounting() {
           ></button>
         </div>
         <!-- modal 主區域 -->
-        <!-- v-model 雙向綁定會造成，送出前datatable資料就更改，
-          若取消會造成資料不同步 -->
-        <!-- 需用深拷貝斷開 -->
         <div class="modal-body">
           <div class="input-group mb-3">
             <span class="input-group-text">時間</span
@@ -269,7 +274,7 @@ async function sendDeleteAccounting() {
       </div>
     </div>
   </div>
-  <!-- delete confirm Modal -->
+  <!-- 修改-刪除確認窗 Modal -->
   <div
     class="modal fade"
     id="deleteModal"
@@ -288,7 +293,6 @@ async function sendDeleteAccounting() {
             aria-label="Close"
           ></button>
         </div>
-        <!-- <div class="modal-body"></div> -->
         <div class="modal-footer">
           <button
             type="button"
@@ -313,6 +317,7 @@ async function sendDeleteAccounting() {
 </template>
 
 <style scoped>
+/* 登入區塊限制縮放寬度 */
 .maxLoginFrame {
   max-width: 480px;
   min-width: 220px;
