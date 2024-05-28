@@ -87,13 +87,10 @@ const formData = ref({ typeId: '', message: null, money: null, recordTime: null 
 const formEditMode = ref('新增模式') // 表單模式
 const formDataModalToggle = ref(null) // 表單區塊 Modal 顯示開關
 // 表單 - 切換模式 mode: 新增模式(default) | 修改模式
-function changeFormEditMode(mode, ListedAccountingId) {
+function changeFormEditMode(mode, AccountingData) {
   formEditMode.value = mode
-  if (ListedAccountingId) {
-    const localData = datatableData.value.filter(function (data) {
-      return data.accountingId === ListedAccountingId
-    })[0] // 排序
-    formData.value = { ...localData } // 需斷開響應式物件
+  if (mode === '修改模式') {
+    formData.value = { ...AccountingData } // 需斷開響應式物件
   } else {
     formData.value = { typeId: '', message: null, money: null, recordTime: null }
   }
@@ -229,7 +226,7 @@ async function sendDeleteAccounting() {
                   class="btn btn-info"
                   data-bs-toggle="modal"
                   data-bs-target="#formDataModal"
-                  @click="changeFormEditMode('修改模式', data.accountingId)"
+                  @click="changeFormEditMode('修改模式', data)"
                 >
                   <i class="bi bi-pencil"></i>
                 </button>
