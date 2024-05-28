@@ -8,9 +8,11 @@ import { Modal } from 'bootstrap'
 import { returnCodeEnum } from '@/utils/enums'
 
 onMounted(async () => {
-  // 取得下拉式選單內容
+  // 初始化，取得下拉式選單內容
   const result = await labelTypeService.getAllLabelType()
   lableTypeArray.value = result.returnData
+  // 初始化，取得formDataModal DOM
+  formDataModal.value = new Modal(document.getElementById('formDataModal'), { keyboard: false })
 
   // 自動登入-判別cookie是否有登入狀態
   if (authService.getToken) {
@@ -85,7 +87,7 @@ async function getDatatable() {
 // 表單 - 新增/修改
 const formData = ref({ typeId: '', message: null, money: null, recordTime: null }) // 表單用響應式物件
 const formEditMode = ref('新增模式') // 表單模式
-const formDataModalToggle = ref(null) // 表單區塊 Modal 顯示開關
+const formDataModal = ref(null) // 表單區塊 Modal 顯示開關
 // 表單 - 切換模式 mode: 新增模式(default) | 修改模式
 function changeFormEditMode(mode, AccountingData) {
   formEditMode.value = mode
@@ -131,7 +133,7 @@ async function sendFormData() {
     }
   }
   getDatatable() // 送出後重撈資料
-  Modal.getInstance(formDataModalToggle.value)?.hide() // 驗證通過 && 送出成功->關閉 modal
+  formDataModal.value.hide() // 驗證通過 && 送出成功->關閉 modal
 }
 // 表單 - 驗證資料
 function isValidatedFormValue() {
@@ -244,7 +246,6 @@ async function sendDeleteAccounting() {
     tabindex="-1"
     aria-labelledby="formDataModalLabel"
     aria-hidden="true"
-    ref="formDataModalToggle"
   >
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
