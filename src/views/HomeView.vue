@@ -8,18 +8,13 @@ import { Modal } from 'bootstrap'
 import { returnCodeEnum } from '@/utils/enums'
 
 onMounted(async () => {
+  // 取得下拉式選單內容
   const result = await labelTypeService.getAllLabelType()
   lableTypeArray.value = result.returnData
 
   // 自動登入-判別cookie是否有登入狀態
   if (authService.getToken) {
-    const getResult = await accountingService.getAllAccountingData() // 登入後撈取清單
-    datatableData.value = await getResult.returnData
-    if (getResult.returnCode !== returnCodeEnum.success) {
-      alert('讀取資料失敗')
-      isLogin.value = false
-      return
-    }
+    getDatatable()
     isLogin.value = true
   }
 })
@@ -29,13 +24,21 @@ const isLogin = ref(false) // 是否登入
 const userLoginInfo = ref({ email: '111', password: '222' }) // 登入input
 // 登入
 async function onLogin() {
-  const loginResult = await authService.login(userLoginInfo.value)
-  if (loginResult.returnCode !== returnCodeEnum.success) {
-    alert('登入失敗')
-    return
+  try {
+    const loginResponse = await authService.login(userLoginInfo.value)
+    if (!loginResponse.ok) throw new Error(loginResponse.status)
+
+    const loginResponseData = await loginResponse.json()
+    if (loginResponseData.returnCode !== returnCodeEnum.success) {
+      alert('登入失敗')
+      return
+    }
+    getDatatable()
+    isLogin.value = true
+  } catch (error) {
+    console.error('登入失敗', error.message)
+    alert('登入失敗: ' + error.message)
   }
-  getDatatable()
-  isLogin.value = true
 }
 // 登出
 function onLogout() {
@@ -63,10 +66,18 @@ const moneyFormatter = new Intl.NumberFormat('en-US', {
 })
 // Datatable - Get資料清單
 async function getDatatable() {
-  const getResult = await accountingService.getAllAccountingData() // [ ] 重撈datatable
-  datatableData.value = getResult.returnData
-  if (getResult.returnCode !== returnCodeEnum.success) {
-    alert('讀取資料失敗')
+  try {
+    const getResponse = await accountingService.getAllAccountingData() // [ ] 重撈datatable
+    if (!getResponse.ok) throw new Error(getResponse.status)
+
+    const getResponseData = await getResponse.json()
+    datatableData.value = getResponseData.returnData
+    if (getResponseData.returnCode !== returnCodeEnum.success) {
+      alert('讀取資料失敗')
+      return
+    }
+  } catch (error) {
+    alert(`連線異常, 取得資料失敗, status code: ${error.message}`)
   }
 }
 
@@ -95,21 +106,34 @@ async function sendFormData() {
     return
   }
   if (formEditMode.value === '新增模式') {
-    const postResult = await accountingService.postInsertAccountingData(formData.value)
-    if (postResult.returnCode !== returnCodeEnum.success) {
-      alert('新增資料失敗')
-      return
+    try {
+      const postResponse = await accountingService.postInsertAccountingData(formData.value)
+      if (!postResponse.ok) throw new Error(postResponse.status)
+
+      const postResponseData = await postResponse.json()
+      if (postResponseData.returnCode !== returnCodeEnum.success) {
+        alert('新增資料失敗')
+        return
+      }
+    } catch (error) {
+      alert(`連線異常, 新增資料失敗, status code: ${error.message}`)
     }
-    getDatatable()
   }
   if (formEditMode.value === '修改模式') {
-    const postResult = await accountingService.putUpdateAccountingData(formData.value)
-    if (postResult.returnCode !== returnCodeEnum.success) {
-      alert('修改資料失敗')
-      return
+    try {
+      const postResponse = await accountingService.putUpdateAccountingData(formData.value)
+      if (!postResponse.ok) throw new Error(postResponse.status)
+
+      const postResponseData = await postResponse.json()
+      if (postResponseData.returnCode !== returnCodeEnum.success) {
+        alert('修改資料失敗')
+        return
+      }
+    } catch (error) {
+      alert(`連線異常, 修改資料失敗, status code: ${error.message}`)
     }
-    getDatatable()
   }
+  getDatatable() // 送出後重撈資料
   Modal.getInstance(formDataModalToggle.value)?.hide() // 驗證通過 && 送出成功->關閉 modal
 }
 // 表單 - 驗證資料
@@ -118,12 +142,19 @@ function isValidatedFormValue() {
 }
 // 表單 - 刪除
 async function sendDeleteAccounting() {
-  console.log(formData.value.accountingId)
-  const deleteResult = await accountingService.deleteAccountingData({
-    accountingId: formData.value.accountingId
-  })
-  if (deleteResult.returnCode !== returnCodeEnum.success) {
-    alert('刪除資料失敗')
+  try {
+    const deleteResponse = await accountingService.deleteAccountingData({
+      accountingId: formData.value.accountingId
+    })
+    if (!deleteResponse.ok) throw new Error(deleteResponse.status)
+
+    const deleteResponseData = await deleteResponse.json()
+    if (deleteResponseData.returnCode !== returnCodeEnum.success) {
+      alert('刪除資料失敗')
+      return
+    }
+  } catch (error) {
+    alert(`連線異常, 刪除資料失敗, status code: ${error.message}`)
   }
   getDatatable()
 }

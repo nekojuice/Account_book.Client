@@ -1,31 +1,25 @@
 export const authService = {
   // 登入回傳資料
-  data: null,
+  loginResponse: null,
   // 登入
   login: async (user) => {
     const loginUrl = 'https://localhost:7185/api/Login'
-    try {
-      const response = await fetch(loginUrl, {
-        method: 'POST',
-        body: JSON.stringify(user),
-        headers: {
-          'content-type': 'application/json'
-        }
-      })
-      if (!response.ok) throw new Error(response.status)
-
-      authService.data = await response.json()
-      await authService.saveTokenToCookie() // 登入時儲存到cookie
-      return authService.data
-    } catch (error) {
-      console.error('登入失敗', error.message)
-      alert('登入失敗: ' + error.message)
-    }
+    const response = await fetch(loginUrl, {
+      method: 'POST',
+      body: JSON.stringify(user),
+      headers: {
+        'content-type': 'application/json'
+      }
+    })
+    authService.loginResponse = response.clone()
+    await authService.saveTokenToCookie() // 登入時儲存到cookie
+    return response
   },
   // 儲存token
   saveTokenToCookie: async () => {
-    if (authService.data) {
-      document.cookie = `token=${authService.data.returnData}`
+    if (authService.loginResponse.ok) {
+      const responseData = await authService.loginResponse.json()
+      document.cookie = `token=${responseData.returnData}`
     }
   },
   // 取得token
