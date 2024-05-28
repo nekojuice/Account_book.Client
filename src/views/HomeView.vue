@@ -20,6 +20,10 @@ onMounted(async () => {
     isLogin.value = true
   }
 })
+// 自動聚焦登入帳號input
+const vFocus = {
+  mounted: (el) => el.focus()
+}
 
 // 登入資訊物件
 const isLogin = ref(false) // 是否登入
@@ -175,68 +179,77 @@ async function sendDeleteAccounting() {
       </nav>
       <hr class="mt-3 mb-3" />
       <!-- 未登入 -->
-      <div
-        v-if="!isLogin"
-        class="input-group d-flex flex-column bg-light border border-3 rounded-3 m-auto p-3 maxLoginFrame"
-      >
-        <span>帳號</span>
-        <input type="text" class="mb-3" v-model="userLoginInfo.email" @keyup.enter="onLogin" />
-        <span>密碼</span>
-        <input
-          type="password"
-          class="mb-3"
-          v-model="userLoginInfo.password"
-          @keyup.enter="onLogin"
-        />
-        <button type="button" class="btn btn-primary" @click="onLogin" @keyup.enter="onLogin">
-          登入
-        </button>
-      </div>
-
-      <!-- 已登入 -->
-      <div v-if="isLogin">
-        <button
-          type="button"
-          class="btn btn-primary mb-3 float-end"
-          data-bs-toggle="modal"
-          data-bs-target="#formDataModal"
-          @click="changeFormEditMode('新增模式', null)"
+      <Transition>
+        <div
+          v-if="!isLogin"
+          class="input-group d-flex flex-column bg-light border border-3 rounded-3 m-auto p-3 maxLoginFrame"
         >
-          + 新增消費記錄
-        </button>
-        <!-- datatable -->
-        <table class="table table-striped">
-          <thead class="table-primary">
-            <tr>
-              <td>消費日期</td>
-              <td>類型</td>
-              <td>金額</td>
-              <td>備註</td>
-              <td></td>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="data in sortDatatableByDate" :key="data.accountingId">
-              <td>{{ new Date(data.recordTime).toLocaleString() }}</td>
-              <td>{{ data.typeName }}</td>
-              <td>
-                {{ moneyFormatter.format(data.money) }}
-              </td>
-              <td>{{ data.message }}</td>
-              <td>
-                <button
-                  class="btn btn-info"
-                  data-bs-toggle="modal"
-                  data-bs-target="#formDataModal"
-                  @click="changeFormEditMode('修改模式', data)"
-                >
-                  <i class="bi bi-pencil"></i>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+          <span>帳號</span>
+          <input
+            v-Focus
+            type="text"
+            class="mb-3"
+            v-model="userLoginInfo.email"
+            @keyup.enter="onLogin"
+          />
+          <span>密碼</span>
+          <input
+            type="password"
+            class="mb-3"
+            v-model="userLoginInfo.password"
+            @keyup.enter="onLogin"
+          />
+          <button type="button" class="btn btn-primary" @click="onLogin" @keyup.enter="onLogin">
+            登入
+          </button>
+        </div>
+      </Transition>
+      <!-- 已登入 -->
+      <Transition>
+        <div v-if="isLogin">
+          <button
+            type="button"
+            class="btn btn-primary mb-3 float-end"
+            data-bs-toggle="modal"
+            data-bs-target="#formDataModal"
+            @click="changeFormEditMode('新增模式', null)"
+          >
+            + 新增消費記錄
+          </button>
+          <!-- datatable -->
+          <table class="table table-striped">
+            <thead class="table-primary">
+              <tr>
+                <td>消費日期</td>
+                <td>類型</td>
+                <td>金額</td>
+                <td>備註</td>
+                <td></td>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="data in sortDatatableByDate" :key="data.accountingId">
+                <td>{{ new Date(data.recordTime).toLocaleString() }}</td>
+                <td>{{ data.typeName }}</td>
+                <td>
+                  {{ moneyFormatter.format(data.money) }}
+                </td>
+                <td>{{ data.message }}</td>
+                <td>
+                  <button
+                    class="btn btn-info"
+                    data-bs-toggle="modal"
+                    data-bs-target="#formDataModal"
+                    @click="changeFormEditMode('修改模式', data)"
+                  >
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </Transition>
     </div>
   </main>
   <!-- 新增/修改表單 Modal -->
@@ -352,5 +365,15 @@ async function sendDeleteAccounting() {
 .maxLoginFrame {
   max-width: 480px;
   min-width: 220px;
+}
+
+.v-enter-active,
+.v-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.v-enter-from,
+.v-leave-to {
+  opacity: 0;
 }
 </style>
