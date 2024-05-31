@@ -1,6 +1,9 @@
+//const baseUrl = 'https://localhost:7185/api'
+const baseUrl = import.meta.env.VITE_ACCBOOK_API_BASEURL
+
 export const labelTypeService = {
   getAllLabelType: async () => {
-    const requestUrl = 'https://localhost:7185/api/LabelType/Get'
+    const requestUrl = `${baseUrl}/api/LabelType/Get`
     try {
       const response = await fetch(requestUrl, {
         method: 'GET'

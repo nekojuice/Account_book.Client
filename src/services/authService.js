@@ -1,9 +1,11 @@
+// const baseUrl = 'https://localhost:7185/api'
+const baseUrl = import.meta.env.VITE_ACCBOOK_API_BASEURL
 export const authService = {
   // 登入回傳資料
   loginResponse: null,
   // 登入
   login: async (user) => {
-    const loginUrl = 'https://localhost:7185/api/Login'
+    const loginUrl = `${baseUrl}/api/Login`
     const response = await fetch(loginUrl, {
       method: 'POST',
       body: JSON.stringify(user),
